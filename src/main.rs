@@ -15,10 +15,12 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(FlyCameraPlugin)
-        .add_systems(Update, apply_boundary_forces)
-        //.add_systems(Update, apply_cube_forces)
+        .init_resource::<GameState>()
+        .add_systems(Update, toggle_forces)
+        .add_systems(Update, apply_cube_forces)
         .run();
 }
+
 
 /// set up a simple 3D scene
 fn setup(
@@ -27,26 +29,34 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut window: Query<&mut Window>,
 ) {
-
-
     (window.single_mut().unwrap().cursor_options.visible) = false;
-
 
     // SPAWNING INVISIBLE BOUNDS
     spawn_bounds(&mut commands);
 
     // cubes
-    let cubes = (1..=4)
-        .map(|i| {
-            let k = 2;
-            let rnd_val = rand::random_range(0_f32..20_f32);
-            let x = (k % i) as f32;
-            let y = (k % i) as f32;
-            let z = 1.0;
-            Cube::new(1.0, rnd_val, Vec3 { x, y, z })
+    let cube_array_size = 4;
+    let iterator_x = 1..=cube_array_size;
+    let iterator_z = iterator_x.clone();
+    let iterator_y = iterator_x.clone();
+
+    let cubes = iterator_x.clone().flat_map(|x| {
+        let x = x % cube_array_size;
+        iterator_z.clone().flat_map({
+            let value = iterator_y.clone();
+            move |z| {
+                let z = z % cube_array_size;
+
+                value.clone().map(move |y| {
+                    let position = vec3(x as f32, (y % cube_array_size) as f32, z as f32);
+
+                    let rnd_val = rand::random_range(0_f32..20_f32);
+                    Cube::new(0.2, rnd_val, position)
+                })
+            }
         })
-        .collect::<Vec<_>>();
-    
+    });
+
     cubes
         .into_iter()
         .for_each(|c| c.spawn(&mut commands, &mut meshes, &mut materials));
@@ -78,42 +88,41 @@ fn setup(
     ));
 }
 
-
 // let cubes = [
-    //     Cube::new(
-    //         1.0,
-    //         14.0,
-    //         Vec3 {
-    //             x: -2.0,
-    //             y: 1.5,
-    //             z: 0.0,
-    //         },
-    //     ),
-    //     Cube::new(
-    //         1.0,
-    //         30.0,
-    //         Vec3 {
-    //             x: 2.0,
-    //             y: 2.0,
-    //             z: 0.0,
-    //         },
-    //     ),
-    //     Cube::new(
-    //         1.0,
-    //         20.0,
-    //         Vec3 {
-    //             x: 7.0,
-    //             y: 2.0,
-    //             z: 0.0,
-    //         },
-    //     ),
-    //     Cube::new(
-    //         1.0,
-    //         10.0,
-    //         Vec3 {
-    //             x: 4.0,
-    //             y: 2.0,
-    //             z: 0.0,
-    //         },
-    //     ),
-    // ];
+//     Cube::new(
+//         1.0,
+//         14.0,
+//         Vec3 {
+//             x: -2.0,
+//             y: 1.5,
+//             z: 0.0,
+//         },
+//     ),
+//     Cube::new(
+//         1.0,
+//         30.0,
+//         Vec3 {
+//             x: 2.0,
+//             y: 2.0,
+//             z: 0.0,
+//         },
+//     ),
+//     Cube::new(
+//         1.0,
+//         20.0,
+//         Vec3 {
+//             x: 7.0,
+//             y: 2.0,
+//             z: 0.0,
+//         },
+//     ),
+//     Cube::new(
+//         1.0,
+//         10.0,
+//         Vec3 {
+//             x: 4.0,
+//             y: 2.0,
+//             z: 0.0,
+//         },
+//     ),
+// ];

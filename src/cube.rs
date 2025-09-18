@@ -44,52 +44,46 @@ impl Cube {
 }
 
 pub fn apply_cube_forces(
+    game_state: Res<GameState>,
     mut query: Query<(&Transform, &mut ExternalForce, &Cube)>,
     query_other: Query<(&Transform, &Cube)>,
 ) {
-    query.iter_mut().for_each(|(trans, mut ext_force, cube)| {
-        ext_force.force = query_other
-            .iter()
-            .map(|(trans_other, cube_other)| {
-                let distance_vec = trans_other.translation - trans.translation;
-                let distance = distance_vec.length();
-                match distance {
-                    ..10_f32 => calc_force(
-                        distance,
-                        distance_vec,
-                        (cube.energy - cube_other.energy).abs(),
-                    ),
-                    _ => Vec3::ZERO,
-                }
-            })
-            .sum::<Vec3>();
-    });
+    if game_state.gravity_enabled {
+        query.iter_mut().for_each(|(trans, mut ext_force, cube)| {
+            ext_force.force = query_other
+                .iter()
+                .map(|(trans_other, cube_other)| {
+                    let distance_vec = trans_other.translation - trans.translation;
+                    let distance = distance_vec.length();
+                    match distance {
+                        1.0..10_f32 => calc_force(
+                            distance,
+                            distance_vec,
+                            (cube.energy - cube_other.energy).abs(),
+                        ),
+                        _ => Vec3::ZERO,
+                    }
+                })
+                .sum::<Vec3>();
+        });
+    }
 }
 
 fn calc_force(distance: f32, distance_vec: Vec3, energy_diff: f32) -> Vec3 {
     match distance {
-        _ => distance.recip() * distance_vec * energy_diff / (1.0 + distance),
-        0.0 => panic!("distance must not be zero")  
+        0.0 => panic!("distance must not be zero"),
+        _ => distance.recip() * distance_vec * energy_diff * 0.0001 / (1.0 + distance),
     }
 }
 
-pub fn apply_boundary_forces(mut query: Query<(&Transform, &mut ExternalForce), With<Cube>>) {
-    let bounds = Vec3::new(50.0, 50.0, 50.0);
-    let boundary_strength = 100.0;
+#[derive(Resource, Default)]
+pub struct GameState {
+    gravity_enabled: bool,
+}
 
-    for (transform, mut force) in query.iter_mut() {
-        let pos = transform.translation;
-        let mut boundary_force = Vec3::ZERO;
-
-        // Forza repulsiva per ogni asse
-        if pos.x > bounds.x * 0.8 {
-            boundary_force.x -= boundary_strength * (pos.x - bounds.x * 0.8).powi(2);
-        } else if pos.x < -bounds.x * 0.8 {
-            boundary_force.x += boundary_strength * (-pos.x - bounds.x * 0.8).powi(2);
-        }
-
-        // Ripeti per Y e Z...
-
-        force.force += boundary_force;
+pub fn toggle_forces(keyboard: Res<ButtonInput<KeyCode>>, mut game_state: ResMut<GameState>) {
+    if keyboard.just_pressed(KeyCode::KeyG) {
+        game_state.gravity_enabled = !game_state.gravity_enabled;
+        println!("Gravity: {}", game_state.gravity_enabled);
     }
 }
