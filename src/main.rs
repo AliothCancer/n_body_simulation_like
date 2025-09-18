@@ -5,9 +5,11 @@ use bevy::{core_pipeline::{bloom::Bloom, tonemapping::{DebandDither, Tonemapping
 use bevy_fly_camera::{FlyCamera, FlyCameraPlugin};
 use bevy_rapier3d::prelude::*;
 use cube::*;
-
-
 use crate::physical_bounds::spawn_bounds;
+
+
+
+/*Press G to toggle attraction forces */
 
 
 pub const MAX_ENERGY: f32 = 20.0;
