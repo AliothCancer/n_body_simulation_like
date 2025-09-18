@@ -56,7 +56,7 @@ pub fn apply_cube_forces(
                     let distance_vec = trans_other.translation - trans.translation;
                     let distance = distance_vec.length();
                     match distance {
-                        1.0..10_f32 => calc_force(
+                        1.0..60_f32 => calc_force(
                             distance,
                             distance_vec,
                             (cube.energy - cube_other.energy).abs(),
@@ -86,4 +86,31 @@ pub fn toggle_forces(keyboard: Res<ButtonInput<KeyCode>>, mut game_state: ResMut
         game_state.gravity_enabled = !game_state.gravity_enabled;
         println!("Gravity: {}", game_state.gravity_enabled);
     }
+}
+
+
+
+pub fn update_cube_colors(
+    mut cubes: Query<(&mut MeshMaterial3d<StandardMaterial>, &Cube), Changed<Cube>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    for (material_handle, cube) in cubes.iter_mut() {
+        if let Some(material) = materials.get_mut(&material_handle.0) {
+            let color = iridescent_gradient(cube.energy);
+            material.base_color = color;
+        }
+    }
+}
+
+fn iridescent_gradient(energy: f32) -> Color {
+    // Normalizza energia (assumendo range 0-100)
+    let t = (energy / 100.0).clamp(0.0, 1.0);
+    
+    // Usa HSV per creare gradiente iridescente
+    // Hue va da 0 (rosso) a 300 (magenta), saltando il verde per più colori saturi
+    let hue = t * 300.0; // 0° = rosso, 60° = giallo, 120° = verde, 180° = ciano, 240° = blu, 300° = magenta
+    let saturation = 0.8; // Alta saturazione per colori vivaci
+    let value = 0.9; // Luminosità alta
+    
+    Color::hsl(hue, saturation, value)
 }

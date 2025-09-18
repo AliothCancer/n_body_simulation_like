@@ -1,10 +1,11 @@
 mod cube;
 mod physical_bounds;
 
-use bevy::prelude::*;
+use bevy::{core_pipeline::{bloom::Bloom, tonemapping::{DebandDither, Tonemapping}}, prelude::*};
 use bevy_fly_camera::{FlyCamera, FlyCameraPlugin};
 use bevy_rapier3d::prelude::*;
 use cube::*;
+
 
 use crate::physical_bounds::spawn_bounds;
 
@@ -18,9 +19,9 @@ fn main() {
         .init_resource::<GameState>()
         .add_systems(Update, toggle_forces)
         .add_systems(Update, apply_cube_forces)
+        .add_systems(Update, update_cube_colors)
         .run();
 }
-
 
 /// set up a simple 3D scene
 fn setup(
@@ -35,7 +36,7 @@ fn setup(
     spawn_bounds(&mut commands);
 
     // cubes
-    let cube_array_size = 4;
+    let cube_array_size = 13;
     let iterator_x = 1..=cube_array_size;
     let iterator_z = iterator_x.clone();
     let iterator_y = iterator_x.clone();
@@ -50,7 +51,7 @@ fn setup(
                 value.clone().map(move |y| {
                     let position = vec3(x as f32, (y % cube_array_size) as f32, z as f32);
 
-                    let rnd_val = rand::random_range(0_f32..20_f32);
+                    let rnd_val = rand::random_range(0_f32..50_f32);
                     Cube::new(0.2, rnd_val, position)
                 })
             }
@@ -65,6 +66,8 @@ fn setup(
     commands.spawn((
         PointLight {
             shadows_enabled: true,
+            range: 300.0,
+            radius: 300.0,
             ..default()
         },
         Transform::from_xyz(4.0, 8.0, 4.0),
@@ -73,6 +76,14 @@ fn setup(
     // camera
     commands.spawn((
         Camera3d::default(),
+        Camera {
+            hdr: true, // 1. HDR is required for bloom
+            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            ..default()
+        },
+        Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
+        Bloom::default(),           // 3. Enable bloom for the camera
+        DebandDither::Enabled,      // Optional: bloom causes gradients which cause banding
         FlyCamera {
             sensitivity: 6.0,
             ..Default::default()
