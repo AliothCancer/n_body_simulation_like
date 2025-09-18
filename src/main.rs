@@ -9,12 +9,16 @@ use cube::*;
 
 use crate::physical_bounds::spawn_bounds;
 
+
+pub const MAX_ENERGY: f32 = 20.0;
+const CUBE_ARRAY_LENGTH : u32 = 7; // will spawn a 3d grid of 7x7x7 cubes 
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(FlyCameraPlugin)
         .init_resource::<GameState>()
         .add_systems(Update, toggle_forces)
@@ -36,22 +40,22 @@ fn setup(
     spawn_bounds(&mut commands);
 
     // cubes
-    let cube_array_size = 13;
-    let iterator_x = 1..=cube_array_size;
+    
+    let iterator_x = 1..=CUBE_ARRAY_LENGTH;
     let iterator_z = iterator_x.clone();
     let iterator_y = iterator_x.clone();
 
     let cubes = iterator_x.clone().flat_map(|x| {
-        let x = x % cube_array_size;
+        let x = x % CUBE_ARRAY_LENGTH;
         iterator_z.clone().flat_map({
             let value = iterator_y.clone();
             move |z| {
-                let z = z % cube_array_size;
+                let z = z % CUBE_ARRAY_LENGTH;
 
                 value.clone().map(move |y| {
-                    let position = vec3(x as f32, (y % cube_array_size) as f32, z as f32);
+                    let position = vec3(x as f32, (y % CUBE_ARRAY_LENGTH) as f32, z as f32);
 
-                    let rnd_val = rand::random_range(0_f32..50_f32);
+                    let rnd_val = rand::random_range(0_f32..MAX_ENERGY);
                     Cube::new(0.2, rnd_val, position)
                 })
             }

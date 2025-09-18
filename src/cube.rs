@@ -3,6 +3,8 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+use crate::MAX_ENERGY;
+
 const DEG_TO_RAD: f32 = 2.0 * PI / 360.0;
 
 #[derive(Component)]
@@ -31,7 +33,7 @@ impl Cube {
         position.rotate_y(30.0 * DEG_TO_RAD);
 
         commands.spawn((
-            Mesh3d(meshes.add(Cuboid::new(self.size, self.size, self.size))),
+            Mesh3d(meshes.add(Sphere::new(self.size))),
             MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
             RigidBody::Dynamic,
             position,
@@ -72,7 +74,7 @@ pub fn apply_cube_forces(
 fn calc_force(distance: f32, distance_vec: Vec3, energy_diff: f32) -> Vec3 {
     match distance {
         0.0 => panic!("distance must not be zero"),
-        _ => distance.recip() * distance_vec * energy_diff * 0.0001 / (1.0 + distance),
+        _ => distance.recip() * distance_vec * energy_diff * 0.001 / (1.0 + distance.powi(2)),
     }
 }
 
@@ -104,13 +106,13 @@ pub fn update_cube_colors(
 
 fn iridescent_gradient(energy: f32) -> Color {
     // Normalizza energia (assumendo range 0-100)
-    let t = (energy / 100.0).clamp(0.0, 1.0);
+    let t = (energy / MAX_ENERGY).clamp(0.0, 1.0);
     
     // Usa HSV per creare gradiente iridescente
     // Hue va da 0 (rosso) a 300 (magenta), saltando il verde per più colori saturi
-    let hue = t * 300.0; // 0° = rosso, 60° = giallo, 120° = verde, 180° = ciano, 240° = blu, 300° = magenta
-    let saturation = 0.8; // Alta saturazione per colori vivaci
-    let value = 0.9; // Luminosità alta
+    let hue = t * 360.0; // 0° = rosso, 60° = giallo, 120° = verde, 180° = ciano, 240° = blu, 300° = magenta
+    let saturation = 0.9; // Alta saturazione per colori vivaci
+    let value = 0.6; // Luminosità alta
     
     Color::hsl(hue, saturation, value)
 }
